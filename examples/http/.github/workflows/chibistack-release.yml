@@ -1,0 +1,101 @@
+name: Chibistack HTTP release
+on:
+  push:
+    branches: [http-release]
+concurrency:
+  group: chibistack-http-release
+  cancel-in-progress: false
+permissions: {}
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    environment: chibistack-production
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+      deployments: write
+    env:
+      APP: ${{ vars.HOST_APP }}
+      CONFIG_SHA256: ${{ vars.HOST_CONFIG_SHA256 }}
+      IMAGE: ${{ vars.HOST_IMAGE }}
+      VERSION: ${{ github.sha }}-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build, test, and scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$APP" =~ ^[a-z][a-z0-9-]{0,31}$ ]]
+          [[ "$CONFIG_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$IMAGE" =~ ^ghcr\.io/[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*$ ]]
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$GITHUB_EVENT_NAME" = push
+          test "$GITHUB_REF" = refs/heads/http-release
+          test "$(id -u)" != 0
+          podman info --format json | jq -e '.host.cgroupVersion == "v2" and .host.security.rootless == true' >/dev/null
+          printf '%s  chibistack.json\n' "$CONFIG_SHA256" | sha256sum --check --strict
+          jq -e --arg app "$APP" --arg image "$IMAGE" --arg repo "$GITHUB_REPOSITORY" \
+            '.app == $app and .image_repo == $image and .github.repo == $repo and .github.branch == "http-release" and .github.environment == "chibistack-production" and .github.workflow_path == ".github/workflows/chibistack-release.yml" and .github.creator_id == 41898282' chibistack.json >/dev/null
+          workflow_sha=$(sha256sum .github/workflows/chibistack-release.yml | cut -d' ' -f1)
+          jq -e --arg hash "$workflow_sha" '.github.workflow_sha256 == $hash' chibistack.json >/dev/null
+          curl --fail --silent --show-error --location --max-time 120 --output "$RUNNER_TEMP/trivy.tgz" https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_Linux-64bit.tar.gz
+          printf '%s  %s\n' bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf "$RUNNER_TEMP/trivy.tgz" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/trivy.tgz" -C "$RUNNER_TEMP" trivy
+          rm -- "$RUNNER_TEMP/trivy.tgz"
+          candidate="chibistack-http-test-$GITHUB_RUN_ID"
+          scan_dir=$(mktemp -d "$RUNNER_TEMP/chibistack-scan.XXXXXX")
+          trap 'result=$?
+            podman rm --force --ignore "$candidate" >/dev/null || result=1
+            rm -rf -- "$scan_dir" || result=1
+            exit "$result"
+          ' EXIT
+          trap 'exit 1' HUP INT TERM
+          podman build --platform=linux/amd64 --pull=always --rm --force-rm \
+            --memory=2g --memory-swap=2g --jobs=1 \
+            --file Containerfile --ignorefile .containerignore --tag "$IMAGE:$VERSION" .
+          timeout -k 15s 2m podman run --rm --name "$candidate" --network=none \
+            --read-only --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m \
+            --cap-drop=all --security-opt=no-new-privileges --memory=64m --memory-swap=64m \
+            --cpus=1 --pids-limit=128 --entrypoint /app/test "$IMAGE:$VERSION"
+          image_bytes=$(podman image inspect --format '{{.Size}}' "$IMAGE:$VERSION")
+          [[ "$image_bytes" =~ ^[0-9]+$ ]]
+          available_kib=$(df -Pk "$RUNNER_TEMP" | awk 'NR==2 {print $4}')
+          test "$((available_kib * 1024))" -ge "$((image_bytes + 1090519040))"
+          timeout -k 15s 2m podman save --format=oci-dir --output "$scan_dir/image" "$IMAGE:$VERSION"
+          timeout -k 15s 8m "$RUNNER_TEMP/trivy" image --scanners vuln --input "$scan_dir/image" \
+            --timeout=5m --exit-code 1 --severity HIGH,CRITICAL --ignorefile '' --config ''
+      - name: Publish image and signed deployment request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MINIMAL_HOST_SIGNING_KEY: ${{ secrets.MINIMAL_HOST_SIGNING_KEY }}
+        run: |
+          set -euo pipefail
+          set +x
+          umask 077
+          test -n "$MINIMAL_HOST_SIGNING_KEY"
+          openssl version | grep -Eq '^OpenSSL [3-9]\.'
+          # Public output only. Reject a secret that does not match the enrolled key.
+          public_key=$(printf '%s\n' "$MINIMAL_HOST_SIGNING_KEY" | openssl pkey -pubout -outform DER 2>/dev/null | tail -c 32 | base64 -w0)
+          jq -e --arg key "$public_key" '.github.signing_public_key == $key' chibistack.json >/dev/null
+          printf '%s' "$GH_TOKEN" | podman login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          trap 'podman logout ghcr.io >/dev/null' EXIT
+          podman push --digestfile "$RUNNER_TEMP/image-digest" "$IMAGE:$VERSION"
+          digest=$(cat "$RUNNER_TEMP/image-digest")
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          jq -cn --arg id "r-$GITHUB_RUN_ID" --arg app "$APP" --arg sha "$GITHUB_SHA" \
+            --arg digest "$digest" --arg config "$CONFIG_SHA256" \
+            --arg repository "$GITHUB_REPOSITORY" --argjson run "$GITHUB_RUN_ID" \
+            '{id:$id,app:$app,sha:$sha,digest:$digest,config_sha256:$config,run_id:$run,expected_current:"",repository:$repository,workflow:".github/workflows/chibistack-release.yml",run_attempt:1}' \
+            > "$RUNNER_TEMP/release.json"
+          printf '%s\n' "$MINIMAL_HOST_SIGNING_KEY" | openssl pkeyutl -sign -rawin \
+            -inkey /dev/stdin -in "$RUNNER_TEMP/release.json" -out "$RUNNER_TEMP/signature"
+          jq -n --arg ref "$GITHUB_SHA" \
+            --arg body "$(base64 -w0 < "$RUNNER_TEMP/release.json")" \
+            --arg signature "$(base64 -w0 < "$RUNNER_TEMP/signature")" \
+            '{ref:$ref,task:"minimal-host",environment:"chibistack-production",auto_merge:false,required_contexts:[],payload:{body:$body,signature:$signature}}' \
+            > "$RUNNER_TEMP/deployment.json"
+          gh api --method POST "repos/$GITHUB_REPOSITORY/deployments" --input "$RUNNER_TEMP/deployment.json" >/dev/null

@@ -1,0 +1,24 @@
+[Unit]
+Description=Owner-approved first enrollment through the protected provider console
+Requires=tailscaled.service minimal-host-mcp.service
+After=tailscaled.service minimal-host-mcp.service network-online.target
+Wants=network-online.target
+OnFailure=minimal-host-failure@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/tailscale up --accept-dns=false --timeout=15m
+ExecStart=/usr/local/bin/tailscale serve --bg --https=9443 --accept-app-caps=minimal.host/capabilities unix:/run/minimal-host-mcp/http.sock
+TimeoutStartSec=17min
+TimeoutStopSec=15s
+StandardOutput=journal+console
+StandardError=journal+console
+UMask=0077
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,22 @@
+[Unit]
+Description=Consistent encrypted backup for %i
+Requires=minimal-host-binaries.service
+After=minimal-host-binaries.service minimal-host-reconcile.service
+ConditionPathExists=/etc/minimal-host/backup/%i.env
+OnFailure=minimal-host-failure@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/minimal-host-backup %i
+LoadCredential=restic-password:/etc/minimal-host/secrets/backup/%i/password
+LoadCredential=restic-repository:/etc/minimal-host/secrets/backup/%i/repository
+EnvironmentFile=-/etc/minimal-host/secrets/backup/%i/environment
+TimeoutStartSec=2h
+TimeoutStopSec=30s
+KillMode=control-group
+UMask=0077
+PrivateTmp=yes
+CacheDirectory=minimal-host-restic
+Environment=XDG_CACHE_HOME=/var/cache/minimal-host-restic
+MemoryMax=512M
+TasksMax=64

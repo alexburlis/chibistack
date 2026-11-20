@@ -1,0 +1,39 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ $# != 1 || "$1" != /* || ! -d "$1" ]]; then
+  printf 'Usage: %s EXISTING_ABSOLUTE_OUTPUT_DIRECTORY\n' "$0" >&2
+  exit 1
+fi
+out=$(cd -- "$1" && pwd -P)
+source=$(cd -- "$(dirname -- "$0")/.." && pwd -P)
+case "$out/" in "$source/"*) printf 'Choose output outside the source checkout.\n' >&2; exit 1 ;; esac
+git -C "$source" diff --exit-code HEAD -- >&2
+cd -- "$source"
+commit=$(git rev-parse HEAD)
+version=$(git show "$commit:VERSION")
+[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-preview\.[0-9]+$ ]]
+name=chibistack-v$version-linux-amd64
+[[ ! -e "$out/$name.tar.gz" && ! -e "$out/$name.tar.gz.sha256" ]]
+work=$(mktemp -d "$out/.preview.XXXXXXXX")
+trap 'rm -rf -- "$work"' EXIT
+mkdir -- "$work/$name"
+git archive "$commit" | tar -xf - -C "$work/$name"
+
+cd -- "$work/$name"
+mkdir bin
+export CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+if [[ $(go env GOVERSION) != go1.27.3 ]]; then
+  printf 'Build the preview with Go 1.27.3 to match its bundled toolchain notices.\n' >&2
+  exit 1
+fi
+go build -trimpath -buildvcs=false -o bin/ ./cmd/hostctl ./cmd/hostmcp
+go build -trimpath -buildvcs=false -o bin/render-host ./scripts/render-host.go
+printf '%s\n' "$commit" > SOURCE_COMMIT
+printf '%s\n' "$(go version)" > GO_TOOLCHAIN
+sha256sum bin/hostctl bin/hostmcp bin/render-host > BINARY-SHA256SUMS
+
+cd -- "$work"
+COPYFILE_DISABLE=1 tar --format=ustar -czf "$name.tar.gz" "$name"
+sha256sum "$name.tar.gz" > "$name.tar.gz.sha256"
+mv -- "$name.tar.gz" "$name.tar.gz.sha256" "$out/"

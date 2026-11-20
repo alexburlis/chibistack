@@ -1,0 +1,14 @@
+[Unit]
+# Sockets precede basic.target; binary setup belongs to activated services.
+Description=Scoped hosting operation socket
+
+[Socket]
+ListenStream=/run/minimal-host/helper.sock
+SocketMode=0660
+SocketGroup=host-mcp
+Accept=yes
+MaxConnections=8
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target

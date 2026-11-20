@@ -1,0 +1,25 @@
+{
+  "app": "http-example",
+  "user": "app-http-example",
+  "uid": 2001,
+  "image_repo": "ghcr.io/OWNER/http-example",
+  "hostname": "http.example.com",
+  "ports": [18081, 18082],
+  "container_port": 8080,
+  "container_uid": 65532,
+  "readiness_path": "/ready",
+  "mode": "overlap",
+  "memory_bytes": 67108864,
+  "cpu_quota": "100%",
+  "ready_seconds": 30,
+  "drain_seconds": 15,
+  "github": {
+    "repo": "OWNER/REPOSITORY",
+    "branch": "http-release",
+    "environment": "chibistack-production",
+    "creator_id": 41898282,
+    "workflow_path": ".github/workflows/chibistack-release.yml",
+    "workflow_sha256": "REPLACE_WITH_WORKFLOW_SHA256",
+    "signing_public_key": "REPLACE_WITH_BASE64_ED25519_PUBLIC_KEY"
+  }
+}

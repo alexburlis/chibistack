@@ -1,0 +1,9 @@
+*
+!go.mod
+!main.go
+!main_test.go
+!site/
+!site/index.html
+!Containerfile
+!licenses/
+!licenses/**

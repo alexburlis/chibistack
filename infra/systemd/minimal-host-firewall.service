@@ -1,0 +1,14 @@
+[Unit]
+Description=Chibistack packet policy
+DefaultDependencies=no
+Before=network-pre.target
+Wants=network-pre.target
+After=systemd-tmpfiles-setup.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/nft -f /etc/minimal-host/firewall.nft
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

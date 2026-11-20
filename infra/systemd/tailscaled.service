@@ -1,0 +1,19 @@
+[Unit]
+Description=Stock Tailscale private connectivity
+Requires=minimal-host-binaries.service
+After=minimal-host-binaries.service network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=notify
+ExecStart=/usr/local/bin/tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/run/tailscale/tailscaled.sock --port=41641
+StateDirectory=tailscale
+RuntimeDirectory=tailscale
+RuntimeDirectoryMode=0750
+Restart=on-failure
+RestartSec=3s
+TimeoutStopSec=20s
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

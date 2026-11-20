@@ -1,0 +1,9 @@
+[Unit]
+Description=Record hosting failure signal
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/logger --priority=daemon.err --tag=minimal-host -- Operation-failed:%i
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes

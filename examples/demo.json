@@ -1,0 +1,35 @@
+{
+  "app": "demo",
+  "user": "app-demo",
+  "uid": 2001,
+  "image_repo": "ghcr.io/example/demo",
+  "hostname": "demo.example.invalid",
+  "ports": [
+    18081,
+    18082
+  ],
+  "container_port": 8080,
+  "container_uid": 65532,
+  "readiness_path": "/ready",
+  "mode": "overlap",
+  "memory_bytes": 268435456,
+  "cpu_quota": "100%",
+  "ready_seconds": 30,
+  "drain_seconds": 300,
+  "mounts": [
+    {
+      "source": "/var/lib/minimal-host/apps/demo/data",
+      "target": "/data",
+      "read_only": false
+    }
+  ],
+  "github": {
+    "repo": "example/demo",
+    "branch": "web-release",
+    "environment": "chibistack-production",
+    "creator_id": 1,
+    "workflow_path": ".github/workflows/chibistack-web.yml",
+    "workflow_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "signing_public_key": "REPLACE_WITH_BASE64_ED25519_PUBLIC_KEY"
+  }
+}

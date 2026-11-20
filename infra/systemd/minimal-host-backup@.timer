@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily backup for %i
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 UTC
+RandomizedDelaySec=10min
+Persistent=yes
+Unit=minimal-host-backup@%i.service
+
+[Install]
+WantedBy=timers.target

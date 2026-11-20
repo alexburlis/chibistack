@@ -1,0 +1,13 @@
+[Unit]
+Description=Check hosting invariants and update health
+Requires=minimal-host-binaries.service
+After=minimal-host-binaries.service minimal-host-reconcile.service
+OnFailure=minimal-host-failure@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/minimal-host-health
+TimeoutStartSec=2min
+TimeoutStopSec=10s
+MemoryMax=128M
+TasksMax=32

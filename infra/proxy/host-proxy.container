@@ -1,0 +1,33 @@
+[Unit]
+Description=Rootless public HTTPS proxy
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Container]
+Image=@PROXY_IMAGE@
+ContainerName=minimal-host-proxy
+Network=host
+UserNS=keep-id:uid=1000,gid=1000
+User=1000:1000
+DropCapability=all
+NoNewPrivileges=true
+ReadOnly=true
+PodmanArgs=--memory=268435456 --memory-swap=268435456 --cpus=1 --pids-limit=128
+Volume=/etc/minimal-host/proxy:/etc/caddy:ro
+Volume=/var/lib/minimal-host/proxy/data:/data:rw,z
+Volume=/var/lib/minimal-host/proxy/config:/config:rw,z
+Volume=/run/minimal-host/proxy:/run/caddy:rw,z
+Tmpfs=/tmp:rw,noexec,nosuid,size=16m
+Exec=caddy run --resume --config /etc/caddy/config.json
+
+[Service]
+Restart=on-failure
+RestartSec=3s
+TimeoutStartSec=120s
+TimeoutStopSec=30s
+MemoryMax=256M
+CPUQuota=100%
+TasksMax=128
+
+[Install]
+WantedBy=default.target

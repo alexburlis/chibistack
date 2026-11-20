@@ -1,0 +1,40 @@
+#!/bin/bash
+set -euo pipefail
+umask 077
+
+if [[ $# != 1 || "$1" != /* || -e "$1" ]]; then
+  printf 'Usage: %s ABSOLUTE_NEW_OUTPUT_DIRECTORY\n' "$0" >&2
+  exit 1
+fi
+bundle=$(cd -- "$(dirname -- "$0")/.." && pwd -P)
+out=$1
+mkdir -- "$out"
+work=$(mktemp -d "$out/.utilities.XXXXXXXX")
+trap 'rm -rf -- "$work"' EXIT
+
+download() {
+  local url=$1 filename=$2 hash=$3
+  if [[ ! "$hash" =~ ^[a-f0-9]{64}$ ]]; then
+    printf 'Invalid SHA-256 pin for %s.\n' "$filename" >&2
+    return 1
+  fi
+  curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+    --connect-timeout 10 --max-time 180 --output "$work/$filename" "$url"
+  (cd -- "$work" && printf '%s  %s\n' "$hash" "$filename" | sha256sum -c -)
+}
+
+download https://pkgs.tailscale.com/stable/tailscale_1.102.5_amd64.tgz tailscale.tgz \
+  65e6d7f19ad7e1c87d20c2a21e92f38a96795cb897af54b04536590e1c148d12
+download https://github.com/restic/restic/releases/download/v0.19.1/restic_0.19.1_linux_amd64.bz2 restic.bz2 \
+  f415415624dcc452f2a02b8c33641791a8c6d6d3b65bbb3543fcf9a25151585c
+
+for name in tailscale tailscaled; do
+  tar -xOf "$work/tailscale.tgz" "tailscale_1.102.5_amd64/$name" > "$work/$name"
+done
+bzip2 -dc "$work/restic.bz2" > "$work/restic"
+install -m 0755 "$bundle/bin/hostctl" "$bundle/bin/hostmcp" "$work/"
+chmod 0755 "$work/tailscale" "$work/tailscaled" "$work/restic"
+COPYFILE_DISABLE=1 tar --format=ustar -cf "$work/utilities.tar" -C "$work" \
+  hostctl hostmcp restic tailscale tailscaled
+(cd -- "$work" && sha512sum utilities.tar > "$out/utilities.sha512")
+mv -- "$work/utilities.tar" "$out/utilities.tar"

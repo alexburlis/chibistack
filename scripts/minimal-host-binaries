@@ -1,0 +1,20 @@
+#!/bin/bash
+set -euo pipefail
+umask 077
+test "$(id -u)" = 0
+test "$(getenforce)" = Enforcing
+sha512sum --check --status /etc/minimal-host/utilities.sha512
+test "$(tar -tf /var/lib/minimal-host/utilities.tar | sort)" = "$(printf '%s\n' hostctl hostmcp restic tailscale tailscaled | sort)"
+test "$(tar -tvf /var/lib/minimal-host/utilities.tar | cut -c1 | sort -u)" = '-'
+chcon -R -t container_file_t /etc/minimal-host/proxy /etc/minimal-host/app-secrets
+stage=$(mktemp -d /run/minimal-host-binaries.XXXXXX)
+trap 'rm -rf -- "$stage"' EXIT
+for binary in hostctl hostmcp tailscale tailscaled restic; do
+  tar --extract --to-stdout --file=/var/lib/minimal-host/utilities.tar "$binary" > "$stage/$binary"
+  test -s "$stage/$binary"
+  test "$(stat -c %s "$stage/$binary")" -le 134217728
+  chmod 0755 "$stage/$binary"
+  install -o root -g root -m 0755 "$stage/$binary" "/usr/local/bin/.$binary.new"
+  mv -f -- "/usr/local/bin/.$binary.new" "/usr/local/bin/$binary"
+  restorecon "/usr/local/bin/$binary"
+done

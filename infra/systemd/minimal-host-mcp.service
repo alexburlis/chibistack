@@ -1,0 +1,33 @@
+[Unit]
+Description=Private scoped MCP adapter
+Requires=minimal-host-binaries.service minimal-host-helper.socket
+After=minimal-host-binaries.service minimal-host-helper.socket
+
+[Service]
+User=host-mcp
+Group=host-mcp
+ExecStart=/usr/local/bin/hostmcp --socket=/run/minimal-host-mcp/http.sock --helper=/run/minimal-host/helper.sock
+RuntimeDirectory=minimal-host-mcp
+RuntimeDirectoryMode=0700
+UMask=0077
+Restart=on-failure
+RestartSec=3s
+TimeoutStopSec=10s
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX
+IPAddressDeny=any
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryMax=128M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target

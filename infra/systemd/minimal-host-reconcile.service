@@ -1,0 +1,23 @@
+[Unit]
+Description=Restore accepted hosting state after boot
+Requires=minimal-host-binaries.service
+Requires=user@1998.service
+After=minimal-host-binaries.service network-online.target systemd-logind.service user@1998.service @APP_USER_UNITS@
+Wants=network-online.target @APP_USER_UNITS@
+Before=minimal-host-poll.service
+OnFailure=minimal-host-failure@%n.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=/usr/sbin/runuser -u host-proxy -- /usr/bin/env -i PATH=/usr/bin:/bin HOME=/var/home/host-proxy XDG_RUNTIME_DIR=/run/user/1998 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1998/bus /usr/bin/systemctl --user start host-proxy.service
+ExecStart=/usr/local/bin/hostctl reconcile
+TimeoutStartSec=15min
+TimeoutStopSec=20s
+KillMode=control-group
+UMask=0077
+MemoryMax=512M
+TasksMax=128
+
+[Install]
+WantedBy=multi-user.target

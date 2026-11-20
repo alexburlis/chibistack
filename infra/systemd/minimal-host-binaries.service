@@ -1,0 +1,15 @@
+[Unit]
+Description=Install verified offline hosting utilities
+Before=minimal-host-mcp.service minimal-host-reconcile.service tailscaled.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/minimal-host-binaries
+RemainAfterExit=yes
+UMask=0077
+TimeoutStartSec=2min
+MemoryMax=256M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target

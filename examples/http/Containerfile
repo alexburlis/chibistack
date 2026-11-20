@@ -1,0 +1,16 @@
+FROM docker.io/library/golang:1.27.4@sha256:205c7636d74e0ffbe3d007162df7d74f859f5a8c8322dfb9f907977686c126cf AS build
+WORKDIR /src
+COPY go.mod main.go main_test.go ./
+COPY site ./site
+ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off
+RUN go test ./... && go vet ./... && go build -trimpath -ldflags="-s -w" -o /out/server .
+
+FROM scratch
+COPY --from=build /usr/local/go/LICENSE /licenses/go/LICENSE
+COPY --from=build /usr/local/go/PATENTS /licenses/go/PATENTS
+COPY licenses/ /licenses/
+COPY --from=build --chown=65532:65532 /out/server /app/server
+COPY --from=build --chown=65532:65532 /out/server /app/test
+USER 65532:65532
+EXPOSE 8080
+ENTRYPOINT ["/app/server"]

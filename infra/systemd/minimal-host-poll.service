@@ -1,0 +1,23 @@
+[Unit]
+Description=Pull approved GitHub release requests
+Requires=minimal-host-binaries.service
+After=minimal-host-binaries.service network-online.target minimal-host-reconcile.service
+Wants=network-online.target
+OnFailure=minimal-host-failure@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/hostctl poll
+TimeoutStartSec=75min
+TimeoutStopSec=20s
+KillMode=control-group
+UMask=0077
+PrivateTmp=yes
+ProtectHome=read-only
+ProtectSystem=strict
+ReadWritePaths=/etc/containers/systemd/users /var/lib/minimal-host /run/minimal-host @APP_OPTIONAL_RW_PATHS@
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+MemoryMax=512M
+TasksMax=128

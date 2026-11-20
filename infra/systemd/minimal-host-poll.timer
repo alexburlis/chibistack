@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for approved releases
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=60s
+RandomizedDelaySec=10s
+Unit=minimal-host-poll.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,26 @@
+[Unit]
+Description=Bounded hosting operation
+Requires=minimal-host-binaries.service @APP_USER_UNITS@
+After=minimal-host-binaries.service @APP_USER_UNITS@
+
+[Service]
+Type=exec
+ExecStart=/usr/local/bin/hostctl helper
+StandardInput=socket
+StandardOutput=socket
+StandardError=journal
+RuntimeMaxSec=75min
+TimeoutStopSec=20s
+KillMode=control-group
+UMask=0077
+PrivateTmp=yes
+ProtectHome=read-only
+ProtectSystem=strict
+ReadWritePaths=/etc/containers/systemd/users /var/lib/minimal-host /run/minimal-host @APP_RW_PATHS@
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictSUIDSGID=yes
+MemoryMax=512M
+TasksMax=128

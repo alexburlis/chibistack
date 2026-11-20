@@ -1,0 +1,185 @@
+{
+  "go": "go1.27.3",
+  "goos": "linux",
+  "goarch": "amd64",
+  "cgo_enabled": false,
+  "roots": [
+    "cmd/hostctl",
+    "cmd/hostmcp",
+    "scripts/render-host.go"
+  ],
+  "selected_standard_files": 1262,
+  "notices": [
+    {
+      "notice": 1,
+      "sources": [
+        {
+          "path": "src/crypto/internal/fips140/aes/aes_generic.go",
+          "sha256": "a33d0a61c315c185f168987c7a2f4035d78b1059e9981cf750b7bdf15f91af08"
+        }
+      ]
+    },
+    {
+      "notice": 2,
+      "sources": [
+        {
+          "path": "src/crypto/internal/fips140/edwards25519/scalar.go",
+          "sha256": "b9bc9ba5a2160dccee62ccbb4371c90c5d1c654d55b8ae08f33fa29c58876050"
+        }
+      ]
+    },
+    {
+      "notice": 3,
+      "sources": [
+        {
+          "path": "src/crypto/internal/fips140/nistec/p256_ordinv.go",
+          "sha256": "175611bd57870e7aa046836a21c223696c3f14f3ceefc3ec1b5db04604b5e5d6"
+        }
+      ]
+    },
+    {
+      "notice": 4,
+      "sources": [
+        {
+          "path": "src/math/acosh.go",
+          "sha256": "e1b20885bef3ccb7763ae868d23120194cf38faef70f1af45d2870ccb1a00140"
+        },
+        {
+          "path": "src/math/asinh.go",
+          "sha256": "7bd3753d8bb94eb86682c9215c6266efccd75a66701aad16fc94d9fbfb89ccb1"
+        },
+        {
+          "path": "src/math/atanh.go",
+          "sha256": "2afbcd791957596e7af481c3d23640f15e2d1149d8ed70fc108ddd1d5ab79430"
+        },
+        {
+          "path": "src/math/erf.go",
+          "sha256": "31cba8a8f66d6081eb393b85e6a0d2a3737ebb3fc3fb192867e393a2907c0c8c"
+        },
+        {
+          "path": "src/math/expm1.go",
+          "sha256": "b05c184f92e2e4bdfb09eb34e6d2474fe4570a4eaf5eb1e128d2b6904908d63c"
+        },
+        {
+          "path": "src/math/j0.go",
+          "sha256": "8d226442c38eeb79e5273980fc5d94f0ba9d4c4407d0e9a7e8db45838fc128f8"
+        },
+        {
+          "path": "src/math/j1.go",
+          "sha256": "599ddf54522dd0cf19e3cdcee1298a5ca98eaa529e6e647fb8311373f5bef1fa"
+        },
+        {
+          "path": "src/math/jn.go",
+          "sha256": "b588c5389aa3ac04eeb72b29a610bef4af02b8ee7faf3d50717d2da2219bc144"
+        },
+        {
+          "path": "src/math/lgamma.go",
+          "sha256": "c07c6b7b6d57e97f47531abca86accbd23e0a0d49d8d5cb60c226e87df9c6804"
+        },
+        {
+          "path": "src/math/log.go",
+          "sha256": "d8675d3d9c665ec0db5cc15478c03efb244301bfa1268d02ae1861bf6f2812ab"
+        },
+        {
+          "path": "src/math/log1p.go",
+          "sha256": "10cb153951ada1c8c5ed3897caded00d90a7314c0640812847c3064a0c5f4b06"
+        },
+        {
+          "path": "src/math/remainder.go",
+          "sha256": "b86740c9a71e4144feec5e728c13f18b157744151d55eeaada90c9c9f26cefef"
+        },
+        {
+          "path": "src/math/sqrt.go",
+          "sha256": "c7e036d1511bea94992014f9b8c9259e5737c385cdd5135db9092369250d4a94"
+        }
+      ]
+    },
+    {
+      "notice": 5,
+      "sources": [
+        {
+          "path": "src/math/atan.go",
+          "sha256": "777b61ebf72d42b754004fe6a5e9a4ac7fb85fb95cd5e6fef396540ce6c42ee1"
+        }
+      ]
+    },
+    {
+      "notice": 6,
+      "sources": [
+        {
+          "path": "src/math/cbrt.go",
+          "sha256": "de08f8225477bd143bd5318c5f46b7e26bdb008db8e4d174c6130e751e66e335"
+        }
+      ]
+    },
+    {
+      "notice": 7,
+      "sources": [
+        {
+          "path": "src/math/exp.go",
+          "sha256": "75d415ac8eca1afc796cd621b393153ff82d342c24f5b391dfdd6a6e70303f2b"
+        }
+      ]
+    },
+    {
+      "notice": 8,
+      "sources": [
+        {
+          "path": "src/math/exp_amd64.s",
+          "sha256": "6b0b9ca5b73d27e457fa3ce283dec9fdbc8411ac3b28afe262059330c32e9980"
+        }
+      ]
+    },
+    {
+      "notice": 9,
+      "sources": [
+        {
+          "path": "src/math/gamma.go",
+          "sha256": "627e52bb7a984ab2da61da481729f317eae7a320a2980c72aa6077ca9e6bd03b"
+        }
+      ]
+    },
+    {
+      "notice": 10,
+      "sources": [
+        {
+          "path": "src/math/sin.go",
+          "sha256": "913640c10f5093e8cdaafa1ebebbf5175b5a156bdc0fa89d77350dd4dad3be9b"
+        }
+      ]
+    },
+    {
+      "notice": 11,
+      "sources": [
+        {
+          "path": "src/math/tan.go",
+          "sha256": "b1a549f6d267acf37399b29827ecc4cc152cfb655d8a2ed6dfe56a67e58f8e60"
+        }
+      ]
+    },
+    {
+      "notice": 12,
+      "sources": [
+        {
+          "path": "src/math/tanh.go",
+          "sha256": "a80f128fa85ddc9e94983b53f4a928f6811b96174e7920032e3e1a4367b96591"
+        }
+      ]
+    },
+    {
+      "notice": 13,
+      "sources": [
+        {
+          "path": "src/runtime/memmove_amd64.s",
+          "sha256": "1d239c1a965baf43cbdfb82a5144d33aadd95d20ff95becf8347a93ddf08985d"
+        }
+      ]
+    }
+  ],
+  "applicable_go_versions": [
+    "go1.27.3",
+    "go1.27.4"
+  ],
+  "go1.27.4_parity_proof": "UPSTREAM_VERIFICATION.json",
+  "http_example_coverage": "HTTP_EXAMPLE_COVERAGE.json"
+}

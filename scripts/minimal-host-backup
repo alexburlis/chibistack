@@ -1,0 +1,54 @@
+#!/bin/bash
+set -euo pipefail
+umask 077
+app=${1:?application required}
+[[ "$app" =~ ^[a-z][a-z0-9-]{0,31}$ ]]
+config="/etc/minimal-host/backup/$app.env"
+test "$(stat -c '%u:%a' "$config")" = 0:644
+# The root-owned generated file contains identity only, never credentials.
+# shellcheck disable=SC1090
+source "$config"
+[[ "$APP_USER" =~ ^app-[a-z][a-z0-9-]{0,31}$ ]]
+[[ "$APP_UID" =~ ^2[0-9]{3}$ ]]
+test "$(id -u "$APP_USER")" = "$APP_UID"
+test -n "${CREDENTIALS_DIRECTORY:-}"
+export RESTIC_PASSWORD_FILE="$CREDENTIALS_DIRECTORY/restic-password"
+export RESTIC_REPOSITORY_FILE="$CREDENTIALS_DIRECTORY/restic-repository"
+exec 9>/run/minimal-host/lifecycle.lock
+flock -n 9 || exit 75
+active=()
+userctl() {
+  runuser -u "$APP_USER" -- env -i PATH=/usr/bin:/bin HOME="/var/home/$APP_USER" \
+    XDG_RUNTIME_DIR="/run/user/$APP_UID" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$APP_UID/bus" \
+    systemctl --user "$@"
+}
+resume() {
+  status=$?
+  trap - EXIT
+  for unit in "${active[@]}"; do userctl start "$unit" || status=1; done
+  exit "$status"
+}
+trap resume EXIT
+trap 'exit 1' HUP INT TERM
+for quadlet in /etc/containers/systemd/users/"$APP_UID"/*.container; do
+  test -f "$quadlet" || continue
+  unit=${quadlet##*/}
+  unit=${unit%.container}.service
+  if userctl is-active --quiet "$unit"; then
+    active+=("$unit")
+  fi
+done
+if (( ${#active[@]} )); then userctl stop "${active[@]}"; fi
+running=$(runuser -u "$APP_USER" -- env -i PATH=/usr/bin:/bin HOME="/var/home/$APP_USER" \
+  XDG_RUNTIME_DIR="/run/user/$APP_UID" podman ps --format '{{.ID}}')
+test -z "$running"
+# Internal deadlines leave time for the EXIT trap before systemd's watchdog.
+if ! timeout -k 15s 90m /usr/local/bin/restic backup --quiet --tag "$app" "/var/lib/minimal-host/apps/$app" >/dev/null 2>&1; then
+  logger -p daemon.err -t minimal-host -- "Backup-failed:$app"
+  exit 1
+fi
+if ! timeout -k 15s 15m /usr/local/bin/restic check --read-data-subset=1/100 >/dev/null 2>&1; then
+  logger -p daemon.err -t minimal-host -- "Backup-check-failed:$app"
+  exit 1
+fi
+logger -t minimal-host -- "Backup-accepted:$app"

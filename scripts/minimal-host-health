@@ -1,0 +1,30 @@
+#!/bin/bash
+set -euo pipefail
+test "$(getenforce)" = Enforcing
+systemctl is-active --quiet minimal-host-firewall.service
+if systemctl is-enabled --quiet dnf5-automatic.timer; then
+  systemctl is-active --quiet dnf5-automatic.timer
+  if systemctl is-failed --quiet dnf5-automatic.service; then exit 1; fi
+  stamp=/var/lib/minimal-host/os-update-success
+  test -f "$stamp" && test ! -L "$stamp"
+  test "$(stat -c %u "$stamp")" = 0
+  age=$(( $(date +%s) - $(stat -c %Y "$stamp") ))
+  test "$age" -ge 0 && test "$age" -lt 612000
+fi
+if systemctl --failed --no-legend --plain | grep -q .; then
+  logger -p daemon.err -t minimal-host -- Failed-system-unit
+  exit 1
+fi
+for config in /etc/minimal-host/apps/*.json; do
+  test -f "$config" || continue
+  app=${config##*/}
+  /usr/local/bin/hostctl doctor "${app%.json}" >/dev/null
+  backup="minimal-host-backup@${app%.json}.service"
+  if systemctl is-enabled --quiet "minimal-host-backup@${app%.json}.timer"; then
+    stamp=$(systemctl show "$backup" -p ExecMainExitTimestamp --value)
+    if [[ -z "$stamp" ]]; then stamp=$(systemctl show "minimal-host-backup@${app%.json}.timer" -p ActiveEnterTimestamp --value); fi
+    test -n "$stamp"
+    age=$(( $(date +%s) - $(date -d "$stamp" +%s) ))
+    test "$age" -lt 93600
+  fi
+done
