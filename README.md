@@ -6,14 +6,17 @@ Deploy signed HTTP services to one Fedora 44 AMD64 host. Chibistack runs each ap
 
 Use a fresh Fedora 44 AMD64 machine with SELinux enforcing, cgroups v2, and independent console access. Use a domain you control if you want public HTTPS. The preview bundle contains `hostctl`, `hostmcp`, `render-host`, installer sources, and the complete [HTTP example](examples/http/README.md).
 
-Verify the archive against the checksum published through the release channel. Extract it as root into a fresh directory under `/root`, then verify the binary hashes:
+Download the Linux AMD64 bundle and `SHA256SUMS` from the [preview release](https://github.com/alexburlis/chibistack/releases/tag/v0.1.0-preview.2) into the same directory on the Fedora host. Run the following commands from that directory as root.
 
 ```sh
-sha256sum -c chibistack-v0.1.0-preview.2-linux-amd64.tar.gz.sha256
-tar --no-same-owner -xzf chibistack-v0.1.0-preview.2-linux-amd64.tar.gz -C /root
-cd /root/chibistack-v0.1.0-preview.2-linux-amd64
-sha256sum -c BINARY-SHA256SUMS
-cat VERSION SOURCE_COMMIT
+archive=chibistack-v0.1.0-preview.2-linux-amd64.tar.gz
+checksum=$(awk -v archive="$archive" '$2 == archive' SHA256SUMS) &&
+	test -n "$checksum" &&
+	printf '%s\n' "$checksum" | sha256sum -c - &&
+	tar --no-same-owner -xzf "$archive" -C /root &&
+	cd "/root/${archive%.tar.gz}" &&
+	sha256sum -c BINARY-SHA256SUMS &&
+	cat VERSION SOURCE_COMMIT
 ```
 
 Copy `examples/http/` into your app repository, including hidden files. Follow the [example’s release setup](examples/http/README.md) to fill in the manifest, pin the workflow hash, configure the release environment, and stage the `http-release` branch. Copy the reviewed `chibistack.json` to `/root/chibistack.json` on the Fedora host. Leave the branch unpushed until the host is ready to pull.
